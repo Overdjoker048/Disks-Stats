@@ -1,2 +1,2 @@
 # Stats-Browser
-Display Stats of your PC
+Display Stats of your PC.
