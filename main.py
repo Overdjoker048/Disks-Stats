@@ -1,14 +1,28 @@
 import psutil
+import win32api
 from tkinter import *
 
 def main():
 
     def analyse():
-        ram_value['text'] = f"{ref_deci((psutil.virtual_memory()[3] / 2 ** 30))}GB/{ref_deci((psutil.virtual_memory()[0] / 2 ** 30))}GB [{psutil.virtual_memory()[2]}%]"
-        disk_value['text'] = f"{int(storage.used / 2 ** 30)}Go/{int(storage.total / 2 ** 30)}Go [{int((storage.used / 2 ** 30) / (storage.total / 2 ** 30) * 100)}%]"
-        window.after(125, analyse)
+        drives = win32api.GetLogicalDriveStrings().split('\000')[:-1]
+        storage = []
+        for i in drives:
+            try:
+                storage.append(psutil.disk_usage(i))
+            except PermissionError:
+                pass
+        drives_values = ""
+        for i in range(len(storage)):
+            if i != 0:
+                drives_values = drives_values + "\n"
+            drives_values = f"{drives_values}({drives[i]}): {deci(storage[i].used / 2 ** 30)}Go/{deci(storage[i].total / 2 ** 30)}Go [{deci((storage[i].used / 2 ** 30) / deci(storage[i].total / 2 ** 30) * 100)}%]"
 
-    def ref_deci(nmb: float):
+        ram['text'] = f"Ram: {deci((psutil.virtual_memory()[3] / 2 ** 30))}GB/{deci((psutil.virtual_memory()[0] / 2 ** 30))}GB [{psutil.virtual_memory()[2]}%]"
+        drives_display['text'] = drives_values
+        window.after(120, analyse)
+
+    def deci(nmb: float):
         entier, decimal = str(nmb).split(".")
         tour = 0
         new_decimale = ""
@@ -20,30 +34,20 @@ def main():
 
         return float(f"{entier}.{str(round(float(new_decimale)))}")
 
-    storage = psutil.disk_usage('/')
     window = Tk()
     window.overrideredirect(True)
     window.wm_attributes("-topmost", True)
     window.wm_attributes("-disabled", True)
-    window.config(bg="#252525")
-    window.geometry("375x90")
+    window.wm_attributes("-transparentcolor", "black")
 
-    frame = Frame(window, bg="#252525")
+    frame = Frame(window, bg="black")
     frame.pack(expand=YES)
-    frame_left = Frame(frame, bg="#252525")
-    frame_left.pack(side=LEFT, fill=X)
-    frame_right = Frame(frame, bg="#252525")
-    frame_right.pack(side=RIGHT, fill=X)
-    ram_title = Label(frame_left, text="Ram:", font=("Courrier", 15), fg="white", bg="#252525")
-    ram_value = Label(frame_right, text=f"{ref_deci((psutil.virtual_memory()[3] / 2 ** 30))}GB/{ref_deci((psutil.virtual_memory()[0] / 2 ** 30))}GB [{psutil.virtual_memory()[2]}%]", font=("Courrier", 15), bg="white", fg="#252525")
-    ram_title.pack(pady=2, padx=5)
-    ram_value.pack(pady=2, padx=5, fill=X)
-    disk_title = Label(frame_left, text="Disk used:", font=("Courrier", 15), fg="white", bg="#252525")
-    disk_title.pack(pady=2, padx=5)
-    disk_value = Label(frame_right, text=f"{int(storage.used / 2 ** 30)}Go/{int(storage.total / 2 ** 30)}Go [{int((storage.used / 2 ** 30) / (storage.total / 2 ** 30) * 100)}%]", font=("Courrier", 15), bg="white", fg="#252525")
-    disk_value.pack(pady=2, padx=5, fill=X)
+    ram = Label(frame, text=f"Ram: {deci((psutil.virtual_memory()[3] / 2 ** 30))}GB/{deci((psutil.virtual_memory()[0] / 2 ** 30))}GB [{psutil.virtual_memory()[2]}%]", font=("Courrier", 13, "bold"), bg="white", fg="#252525")
+    ram.pack(pady=3, padx=4, fill=X)
+    drives_display = Label(frame, font=("Courrier", 13, "bold"), fg="#252525", bg="white")
+    drives_display.pack(pady=3, padx=4, fill=X)
 
-    window.after(125, analyse)
+    window.after(0, analyse)
     window.mainloop()
 
 if __name__ == "__main__":
