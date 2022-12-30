@@ -1,17 +1,17 @@
-import psutil
-import win32api
-import json
-import os
-from tkinter import *
-from tkinter import messagebox
+from psutil import virtual_memory, disk_usage
+from win32api import GetLogicalDriveStrings
+from os import path
+from json import dump, load
+from sys import exit
+from tkinter import Tk, Label, Menu, X, messagebox
 
 def main():
     with open("config.json", "a+") as file:
         file.close()
-    if os.path.exists("config.json"):
+    if path.exists("config.json"):
         try:
             with open("config.json", "r+") as file:
-                content = json.load(fp=file)
+                content = load(fp=file)
         except:
             content = {
                 "first": "white",
@@ -29,41 +29,45 @@ def main():
             "second": second
         }
         with open("config.json", "w+") as file:
-            json.dump(info, file, indent=2)
-        messagebox.showinfo(title="Stats Browser Info", message="You must restart the application\nfor the settings to be active.")
-
+            dump(info, file, indent=2)
+        drives_display.config(fg=second, bg=first)
+        ram.config(fg=second, bg=first)
 
     def analyse():
 
-        drives = win32api.GetLogicalDriveStrings().split('\000')[:-1]
+        drives = GetLogicalDriveStrings().split('\000')[:-1]
 
         storage = []
         for i in drives:
             try:
-                storage.append(psutil.disk_usage(i))
+                storage.append(disk_usage(i))
             except PermissionError:
-                pass
+                storage.append("pass")
         drives_values = ""
         for i in range(len(storage)):
-            if i != 0:
-                drives_values = drives_values + "\n"
-            drives_values = f"{drives_values}({drives[i]}): {deci(storage[i].used / 2 ** 30)}Go/{deci(storage[i].total / 2 ** 30)}Go [{deci((storage[i].used / 2 ** 30) / deci(storage[i].total / 2 ** 30) * 100)}%]"
+            if storage[i] != "pass":
+                if i != 0:
+                    drives_values = drives_values + "\n"
+                drives_values = f"{drives_values}({drives[i]}): {deci(storage[i].used)}Go/{deci(storage[i].total)}Go [{deci((storage[i].used) / deci(storage[i].total) * 100)}%]"
 
-        ram['text'] = f"Ram: {deci((psutil.virtual_memory()[3] / 2 ** 30))}GB/{deci((psutil.virtual_memory()[0] / 2 ** 30))}GB [{psutil.virtual_memory()[2]}%]"
+        ram['text'] = f"Ram: {deci((virtual_memory()[3]))}GB/{deci((virtual_memory()[0]))}GB [{virtual_memory()[2]}%]"
         drives_display['text'] = drives_values
-        window.after(100, analyse)
+        window.after(125, analyse)
 
     def deci(nmb: float):
-        entier, decimal = str(nmb).split(".")
-        tour = 0
-        new_decimale = ""
-        for i in decimal:
-            if tour == 2:
-                new_decimale += "."
-            new_decimale += str(i)
-            tour += 1
+        if round(nmb / 10 ** 7) == 0:
+            return 0
+        else:
+            entier, decimal = str(nmb/ 10 ** 9).split(".")
+            tour = 0
+            new_decimale = ""
+            for i in decimal:
+                if tour == 2:
+                    new_decimale += "."
+                new_decimale += str(i)
+                tour += 1
 
-        return float(f"{entier}.{str(round(float(new_decimale)))}")
+            return float(f"{entier}.{str(round(float(new_decimale)))}")
 
     window = Tk()
     window.overrideredirect(True)
@@ -72,7 +76,7 @@ def main():
     window.wm_attributes("-topmost", True)
     window.wm_attributes("-transparentcolor", "red")
 
-    ram = Label(window, text=f"Ram: {deci((psutil.virtual_memory()[3] / 2 ** 30))}GB/{deci((psutil.virtual_memory()[0] / 2 ** 30))}GB [{psutil.virtual_memory()[2]}%]", font=("Courrier", 13, "bold"), bg=content['first'], fg=content['second'])
+    ram = Label(window, text=f"Ram: {deci((virtual_memory()[3] / 2 ** 30))}GB/{deci((virtual_memory()[0] / 2 ** 30))}GB [{virtual_memory()[2]}%]", font=("Courrier", 13, "bold"), bg=content['first'], fg=content['second'])
     ram.pack(pady=2, fill=X)
     drives_display = Label(window, font=("Courrier", 13, "bold"), fg=content['second'], bg=content['first'])
     drives_display.pack(pady=2, fill=X)
