@@ -1,14 +1,14 @@
-from psutil import disk_usage
-from win32api import GetLogicalDriveStrings
-from tkinter import Tk, Label, LEFT
+import psutil
+import win32api
+from tkinter import *
 
 def analyse():
-    drives = GetLogicalDriveStrings().split('\000')[:-1]
+    drives = win32api.GetLogicalDriveStrings().split('\000')[:-1]
 
     storage = []
     for i in drives:
         try:
-            storage.append(disk_usage(i))
+            storage.append(psutil.disk_usage(i))
         except PermissionError:
             storage.append("pass")
     drives_values = ""
